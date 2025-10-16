@@ -2,10 +2,11 @@ import {
   Camera,
   CameraRef,
   FillLayer,
+  Images,
   LineLayer,
   MapView,
-  PointAnnotation,
   ShapeSource,
+  SymbolLayer,
 } from "@maplibre/maplibre-react-native";
 import { useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
@@ -14,8 +15,9 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 export default function Index() {
   const router = useRouter();
   const cameraRef = useRef<CameraRef>(null);
-  const geojson = require("../assets/map.json");
+  const mapRef = useRef<any>(null);
 
+  const geojson = require("./assets/map.json");
   const startingCenter: [number, number] = [-53.0964, -25.705];
   const minZoom = 15;
   const maxZoom = 18;
@@ -35,6 +37,7 @@ export default function Index() {
   return (
     <View style={styles.page}>
       <MapView
+        ref={mapRef}
         style={styles.map}
         mapStyle="https://demotiles.maplibre.org/style.json"
         onPress={handleMapPress}
@@ -51,19 +54,15 @@ export default function Index() {
           });
         }}
       >
-        {markerCoords && (
-          <PointAnnotation id="selected-marker" coordinate={markerCoords}>
-            <View style={styles.marker} />
-          </PointAnnotation>
-        )}
-        
+        <Images images={{ marker: require("./assets/map-marker-2-svgrepo-com.png") }} />
+
         <ShapeSource id="geojson-source" shape={geojson}>
           <FillLayer
-            id="building-layer"
+            id="buildings"
             filter={["==", ["geometry-type"], "Polygon"]}
             style={{
               fillColor: "#9b9b9b",
-              fillOutlineColor: "#333333",
+              fillOutlineColor: "#333",
               fillOpacity: 0.6,
             }}
           />
@@ -96,9 +95,40 @@ export default function Index() {
           />
         </ShapeSource>
 
+        {markerCoords && (
+          <ShapeSource
+            id="marker-source"
+            shape={{
+              type: "FeatureCollection",
+              features: [
+                {
+                  type: "Feature",
+                  properties: {},
+                  geometry: {
+                    type: "Point",
+                    coordinates: markerCoords,
+                  },
+                },
+              ],
+            }}
+          >
+            <SymbolLayer
+              id="marker-layer"
+              style={{
+                iconImage: "marker",
+                iconSize: 0.2,
+                iconAllowOverlap: true,
+                iconAnchor: "bottom",
+                iconOffset: [10, 50], 
+              }}
+            />
+          </ShapeSource>
+        )}
+
         <Camera ref={cameraRef} minZoomLevel={minZoom} maxZoomLevel={maxZoom} />
       </MapView>
 
+      {/* === Bottom Button === */}
       {markerCoords && (
         <View style={styles.bottomButtonContainer}>
           <TouchableOpacity style={styles.bottomButton} onPress={goToPopup}>
@@ -107,6 +137,7 @@ export default function Index() {
         </View>
       )}
 
+      {/* === Coordinates Overlay === */}
       <View style={styles.coordinates}>
         <Text style={styles.text}>
           Coordenadas: {centerCoords[0].toFixed(6)}, {centerCoords[1].toFixed(6)}
@@ -129,14 +160,6 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   text: { color: "#fff", fontWeight: "bold" },
-  marker: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#000",
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
   bottomButtonContainer: {
     position: "absolute",
     bottom: 40,
