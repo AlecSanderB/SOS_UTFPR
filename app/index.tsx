@@ -1,6 +1,7 @@
 import {
   Camera,
   CameraRef,
+  FillLayer,
   LineLayer,
   MapView,
   PointAnnotation,
@@ -50,17 +51,52 @@ export default function Index() {
           });
         }}
       >
-        <ShapeSource id="geojson-source" shape={geojson}>
-          <LineLayer id="lines" style={{ lineColor: "#007cbf", lineWidth: 2 }} />
-        </ShapeSource>
-
-        <Camera ref={cameraRef} minZoomLevel={minZoom} maxZoomLevel={maxZoom} />
-
         {markerCoords && (
           <PointAnnotation id="selected-marker" coordinate={markerCoords}>
             <View style={styles.marker} />
           </PointAnnotation>
         )}
+        
+        <ShapeSource id="geojson-source" shape={geojson}>
+          <FillLayer
+            id="building-layer"
+            filter={["==", ["geometry-type"], "Polygon"]}
+            style={{
+              fillColor: "#9b9b9b",
+              fillOutlineColor: "#333333",
+              fillOpacity: 0.6,
+            }}
+          />
+
+          <LineLayer
+            id="tertiary-roads"
+            filter={[
+              "all",
+              ["==", ["geometry-type"], "LineString"],
+              ["==", ["get", "highway"], "tertiary"],
+            ]}
+            style={{
+              lineColor: "#ff8c00",
+              lineWidth: 3,
+            }}
+          />
+
+          <LineLayer
+            id="unclassified-roads"
+            filter={[
+              "all",
+              ["==", ["geometry-type"], "LineString"],
+              ["==", ["get", "highway"], "unclassified"],
+            ]}
+            style={{
+              lineColor: "#f1c40f",
+              lineWidth: 2,
+              lineDasharray: [2, 2],
+            }}
+          />
+        </ShapeSource>
+
+        <Camera ref={cameraRef} minZoomLevel={minZoom} maxZoomLevel={maxZoom} />
       </MapView>
 
       {markerCoords && (
