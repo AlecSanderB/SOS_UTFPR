@@ -1,5 +1,9 @@
-Tela de cadastro
-Tela de login
+Tela 1: Mapa - Trocar tela de carregamento e adicionar roteamento
+Tela 2: Chamada de emergência
+Tela 3: Lista de emergências chamadas
+Tela 4: Configurações do aplicativo
+Tela 5: Perfil do usuário
+
 Conexão com um BD (supabase?) para contas e outros dados
 Chamar emergência salva as coordenadas e outros dados no banco
 Uma tela para ver uma lista de emergências
