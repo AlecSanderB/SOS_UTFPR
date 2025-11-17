@@ -1,0 +1,7 @@
+Tela de cadastro
+Tela de login
+Conexão com um BD (supabase?) para contas e outros dados
+Chamar emergência salva as coordenadas e outros dados no banco
+Uma tela para ver uma lista de emergências
+Pressionar na emergência abre o mapa com o marker fixo no local
+Roteamento?
