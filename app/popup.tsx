@@ -1,118 +1,134 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { supabase } from "./supabase";
 
-export default function PopupScreen() {
+export default function Popup() {
   const router = useRouter();
+  const { latitude, longitude } = useLocalSearchParams();
+
+  const lat = latitude ? parseFloat(latitude as string) : null;
+  const lng = longitude ? parseFloat(longitude as string) : null;
+
   const [natureza, setNatureza] = useState("");
   const [infoAdicional, setInfoAdicional] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleClose = () => {
-    router.back();
-  };
+  const handleCallSamu = async () => {
+    if (!lat || !lng) {
+      Alert.alert("Erro", "Coordenadas inválidas.");
+      return;
+    }
 
-  const handleCallSamu = () => {
-    // PLACEHOLDER
-    alert("Chamando SAMU...");
+    if (!natureza.trim()) {
+      Alert.alert("Erro", "Descreva a natureza da emergência.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // invoke automatically includes the user's auth token from supabase.auth
+      const { data, error } = await supabase.functions.invoke("create-emergency", {
+        body: {
+          latitude: lat,
+          longitude: lng,
+          nature_of_emergency: natureza,
+          additional_info: infoAdicional,
+        },
+      });
+
+      if (error) {
+        console.error("Invoke error:", error);
+        Alert.alert("Erro", error.message || "Não foi possível registrar a ocorrência.");
+        setLoading(false);
+        return;
+      }
+
+      Alert.alert("Sucesso", "Emergência registrada com sucesso!");
+      router.back();
+    } catch (err) {
+      console.error("Unexpected invoke error:", err);
+      Alert.alert("Erro", "Erro inesperado.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <TouchableOpacity style={styles.topButton} onPress={handleClose}>
-          <Text style={styles.topButtonText}>Mudar Localização</Text>
-        </TouchableOpacity>
+    <View style={styles.container}>
+      <Text style={styles.title}>Registrar Emergência</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.label}>Natureza da Emergência</Text>
-          <TextInput
-            style={styles.textInput}
-            multiline
-            value={natureza}
-            onChangeText={setNatureza}
-            placeholder="Descreva a emergência"
-          />
-        </View>
+      <Text style={styles.label}>Natureza da emergência</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Ex: Acidente, incêndio, mal súbito..."
+        value={natureza}
+        onChangeText={setNatureza}
+      />
 
-        <View style={styles.section}>
-          <Text style={styles.label}>Informações Adicionais</Text>
-          <TextInput
-            style={styles.textInput}
-            multiline
-            value={infoAdicional}
-            onChangeText={setInfoAdicional}
-            placeholder="Nome, Tipo Sanguíneo, Alergias, etc."
-          />
-        </View>
+      <Text style={styles.label}>Informações adicionais</Text>
+      <TextInput
+        style={[styles.input, { height: 80 }]}
+        multiline
+        placeholder="Opcional"
+        value={infoAdicional}
+        onChangeText={setInfoAdicional}
+      />
 
-        <TouchableOpacity style={styles.bottomButton} onPress={handleCallSamu}>
-          <Text style={styles.bottomButtonText}>Chamar SAMU</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <TouchableOpacity style={styles.button} onPress={handleCallSamu} disabled={loading}>
+        <Text style={styles.buttonText}>{loading ? "Enviando..." : "Confirmar Emergência"}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.cancel} onPress={() => router.back()}>
+        <Text style={styles.cancelText}>Cancelar</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 20,
     backgroundColor: "#fff",
   },
-  scrollContainer: {
-    padding: 20,
-    justifyContent: "flex-start",
-  },
-  topButton: {
-    backgroundColor: "#555",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  topButtonText: {
-    color: "#fff",
+  title: {
+    fontSize: 22,
     fontWeight: "bold",
-    fontSize: 16,
-  },
-  section: {
     marginBottom: 20,
   },
   label: {
-    fontWeight: "bold",
+    fontSize: 16,
+    fontWeight: "600",
     marginBottom: 6,
-    fontSize: 14,
   },
-  textInput: {
+  input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 10,
-    minHeight: 150,
-    textAlignVertical: "top",
-  },
-  bottomButton: {
-    backgroundColor: "#000",
-    paddingVertical: 16,
     borderRadius: 8,
+    padding: 10,
+    marginBottom: 15,
+  },
+  button: {
+    backgroundColor: "#d93025",
+    padding: 14,
+    borderRadius: 10,
     alignItems: "center",
     marginTop: 10,
   },
-  bottomButtonText: {
+  buttonText: {
     color: "#fff",
-    fontWeight: "bold",
     fontSize: 16,
+    fontWeight: "bold",
+  },
+  cancel: {
+    marginTop: 15,
+    alignItems: "center",
+  },
+  cancelText: {
+    color: "#333",
+    fontSize: 15,
   },
 });
+[]

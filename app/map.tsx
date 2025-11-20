@@ -115,9 +115,15 @@ export default function MapScreen() {
     });
   };
 
-  // Navigate to emergency popup
   const goToPopup = () => {
-    router.push("/popup");
+    if (!markerCoords) return;
+    router.push({
+      pathname: "/popup",
+      params: {
+        longitude: markerCoords[0].toString(),
+        latitude: markerCoords[1].toString(),
+      },
+    });
   };
 
   if (loading || !centerCoords || !markerCoords) {
