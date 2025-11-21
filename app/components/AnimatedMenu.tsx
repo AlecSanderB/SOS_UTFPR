@@ -75,7 +75,7 @@ export default function AnimatedMenu() {
 }
 
 const styles = StyleSheet.create({
-  menuContainer: { position: "absolute", top: 50, left: 20, alignItems: "flex-start", zIndex: 1000 },
+  menuContainer: { position: "absolute", top: 30, left: 20, alignItems: "flex-start", zIndex: 1000 },
   menuButton: {
     backgroundColor: "#fff",
     width: 60,
