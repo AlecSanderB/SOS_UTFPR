@@ -10,11 +10,11 @@ import {
 } from "@maplibre/maplibre-react-native";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-// Import the reusable menu
 import AnimatedMenu from "../components/AnimatedMenu";
+import { useTheme } from "../ThemeContext";
 
 async function getLocationWithTimeout(options: any, timeoutMs: number) {
   return Promise.race([
@@ -27,20 +27,29 @@ async function getLocationWithTimeout(options: any, timeoutMs: number) {
 
 export default function MapScreen() {
   const router = useRouter();
+  const { theme, isDark } = useTheme();
   const cameraRef = useRef<CameraRef>(null);
   const mapRef = useRef<any>(null);
 
   const geojson = require("../assets/map.json");
-  const markerImage = require("../assets/map-marker-2-svgrepo-com.png");
+
+  // Two PNG markers based on theme
+  const markerImage = isDark
+    ? require("../assets/map-marker-2-svgrepo-com-white.png")
+    : require("../assets/map-marker-2-svgrepo-com.png");
 
   const fallbackCenter: [number, number] = [-53.0964, -25.705];
-  const minZoom = 15;
+  const defaultZoom = 15;
+  const minZoom = 12; // allow zooming out more
   const maxZoom = 18;
 
   const [centerCoords, setCenterCoords] = useState<[number, number] | null>(null);
   const [markerCoords, setMarkerCoords] = useState<[number, number] | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
+
+  const zoomRef = useRef<number>(defaultZoom);
+  const initializedCamera = useRef(false);
 
   async function loadUserLocation() {
     setLoading(true);
@@ -88,17 +97,18 @@ export default function MapScreen() {
     const coords = event.geometry.coordinates as [number, number];
     setMarkerCoords(coords);
 
-    let currentZoom = minZoom;
-    try {
-      const z = mapRef.current?.getZoom();
-      if (typeof z === "number") currentZoom = z;
-    } catch (_) {}
-
     cameraRef.current?.setCamera({
       centerCoordinate: coords,
-      zoomLevel: currentZoom,
+      zoomLevel: zoomRef.current,
       animationDuration: 300,
     });
+  };
+
+  const handleRegionDidChange = () => {
+    try {
+      const zoom = mapRef.current?.getZoom();
+      if (typeof zoom === "number") zoomRef.current = zoom;
+    } catch (_) {}
   };
 
   const goToPopup = () => {
@@ -112,17 +122,49 @@ export default function MapScreen() {
     });
   };
 
+  // Reset map camera to user location or fallback
+  const handleResetCamera = () => {
+    const targetCoords = centerCoords ?? fallbackCenter;
+    zoomRef.current = defaultZoom;
+
+    cameraRef.current?.setCamera({
+      centerCoordinate: targetCoords,
+      zoomLevel: defaultZoom,
+      animationDuration: 500,
+    });
+
+    setMarkerCoords(targetCoords);
+  };
+
+  const mapStyle = useMemo(
+    () => ({
+      version: 8,
+      sources: {},
+      layers: [
+        {
+          id: "background",
+          type: "background",
+          paint: { "background-color": isDark ? "#121212" : "#90ca6d" },
+        },
+      ],
+    }),
+    [isDark]
+  );
+
   if (loading || !centerCoords || !markerCoords) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000" />
-        <Text style={styles.loadingText}>Obtendo localização...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.text }]}>Carregando...</Text>
 
         {locationError && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{locationError}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadUserLocation}>
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
+          <View style={[styles.errorBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            <Text style={[styles.errorText, { color: theme.colors.text }]}>{locationError}</Text>
+            <TouchableOpacity
+              style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+              onPress={loadUserLocation}
+            >
+              <Text style={[styles.retryButtonText, { color: theme.colors.text }]}>Tentar novamente</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -131,25 +173,22 @@ export default function MapScreen() {
   }
 
   return (
-    <View style={styles.page}>
+    <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
       <MapView
         ref={mapRef}
         style={styles.map}
-        mapStyle={{
-          version: 8,
-          sources: {},
-          layers: [{ id: "background", type: "background", paint: { "background-color": "#90ca6d" } }],
-        }}
+        mapStyle={mapStyle}
         onPress={handleMapPress}
-        onRegionDidChange={(region) => {
-          if (region?.geometry?.coordinates) setCenterCoords(region.geometry.coordinates as [number, number]);
-        }}
+        onRegionDidChange={handleRegionDidChange}
         onDidFinishLoadingMap={() => {
-          cameraRef.current?.setCamera({
-            centerCoordinate: centerCoords,
-            zoomLevel: minZoom,
-            animationDuration: 250,
-          });
+          if (!initializedCamera.current && centerCoords) {
+            cameraRef.current?.setCamera({
+              centerCoordinate: centerCoords,
+              zoomLevel: zoomRef.current,
+              animationDuration: 250,
+            });
+            initializedCamera.current = true;
+          }
         }}
       >
         <Images images={{ marker: markerImage }} />
@@ -158,12 +197,16 @@ export default function MapScreen() {
           <FillLayer
             id="buildings"
             filter={["==", ["geometry-type"], "Polygon"]}
-            style={{ fillColor: "#9b9b9b", fillOutlineColor: "#333", fillOpacity: 0.6 }}
+            style={{
+              fillColor: isDark ? "#444" : "#9b9b9b",
+              fillOutlineColor: isDark ? "#222" : "#333",
+              fillOpacity: 0.6,
+            }}
           />
           <LineLayer
             id="roads"
             filter={["==", ["geometry-type"], "LineString"]}
-            style={{ lineColor: "#e99a3a", lineWidth: 3 }}
+            style={{ lineColor: isDark ? "#ffb74d" : "#e99a3a", lineWidth: 3 }}
           />
         </ShapeSource>
 
@@ -177,7 +220,13 @@ export default function MapScreen() {
           >
             <SymbolLayer
               id="marker-layer"
-              style={{ iconImage: "marker", iconSize: 0.2, iconAllowOverlap: true, iconAnchor: "bottom", iconOffset: [10, 50] }}
+              style={{
+                iconImage: "marker",
+                iconSize: 0.2,
+                iconAllowOverlap: true,
+                iconAnchor: "bottom",
+                iconOffset: [10, 50],
+              }}
             />
           </ShapeSource>
         )}
@@ -185,16 +234,48 @@ export default function MapScreen() {
         <Camera ref={cameraRef} minZoomLevel={minZoom} maxZoomLevel={maxZoom} />
       </MapView>
 
-      {/* Bottom emergency button */}
       {markerCoords && (
-        <View style={styles.bottomButtonContainer}>
-          <TouchableOpacity style={styles.bottomButton} onPress={goToPopup}>
-            <Text style={styles.bottomButtonText}>Sinalizar Emergência</Text>
+        <>
+          <View style={styles.bottomButtonContainer}>
+            <TouchableOpacity
+              style={[styles.bottomButton, { backgroundColor: "#ff5b5b" }]}
+              onPress={goToPopup}
+            >
+              <Text style={[styles.bottomButtonText, { color: "#fff" }]}>Sinalizar Emergência</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.resetButton,
+              {
+                backgroundColor: theme.colors.card, 
+                elevation: 0,
+                shadowColor: "transparent",
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0,
+                shadowRadius: 0,
+              },
+            ]}
+            onPress={handleResetCamera}
+          >
+            <Text
+              style={{
+                color: theme.colors.text,
+                fontWeight: "bold",
+                fontSize: 40,
+                textAlign: "center",
+                textAlignVertical: "center",
+                lineHeight: 32,
+              }}
+            >
+              ⊚
+            </Text>
           </TouchableOpacity>
-        </View>
+
+        </>
       )}
 
-      {/* Reusable animated menu */}
       <AnimatedMenu />
     </View>
   );
@@ -205,11 +286,22 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20, gap: 20 },
   loadingText: { fontSize: 16, marginTop: 10 },
-  errorBox: { marginTop: 20, padding: 15, backgroundColor: "#ffe6e6", borderRadius: 10, width: "100%", alignItems: "center" },
-  errorText: { textAlign: "center", color: "#a00", marginBottom: 10 },
-  retryButton: { backgroundColor: "#000", paddingVertical: 12, paddingHorizontal: 30, borderRadius: 8 },
-  retryButtonText: { color: "#fff", fontWeight: "bold" },
+  errorBox: { marginTop: 20, padding: 15, borderRadius: 10, width: "100%", alignItems: "center", borderWidth: 1 },
+  errorText: { textAlign: "center", marginBottom: 10 },
+  retryButton: { paddingVertical: 12, paddingHorizontal: 30, borderRadius: 8 },
+  retryButtonText: { fontWeight: "bold" },
   bottomButtonContainer: { position: "absolute", bottom: 40, left: 0, right: 0, alignItems: "center" },
-  bottomButton: { backgroundColor: "#ff5b5b", paddingVertical: 20, paddingHorizontal: 60, borderRadius: 12 },
-  bottomButtonText: { color: "#fff", fontWeight: "bold", textAlign: "center", fontSize: 25 },
+  bottomButton: { paddingVertical: 20, paddingHorizontal: 60, borderRadius: 12 },
+  bottomButtonText: { fontWeight: "bold", textAlign: "center", fontSize: 25 },
+  resetButton: {
+    position: "absolute",
+    bottom: 150,
+    right: 25,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+  },
 });

@@ -1,23 +1,34 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useAuth } from "../AuthContext";
 import { supabase } from "../supabase";
+
+import LabeledInput from "../components/LabeledInput";
+import PasswordInput from "../components/LabeledPasswordInput";
+import PrimaryButton from "../components/PrimaryButton";
+import ThemedAlert from "../components/ThemedAlert";
+import { useTheme } from "../ThemeContext";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const { theme } = useTheme();
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Themed alert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState<string | undefined>();
+  const [alertMessage, setAlertMessage] = useState("");
+
+  const showAlert = (message: string, title?: string) => {
+    setAlertMessage(message);
+    setAlertTitle(title);
+    setAlertVisible(true);
+  };
 
   const validateInputs = () => {
     if (!/^[^@]+@[^@]+\w+$/.test(email)) return "Digite um e-mail válido.";
@@ -27,72 +38,60 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     const errorMsg = validateInputs();
-    if (errorMsg) return Alert.alert("Erro", errorMsg);
+    if (errorMsg) return showAlert(errorMsg, "Erro");
 
     setLoading(true);
 
     try {
-      const response = await supabase.functions.invoke("login", {
-        body: { email, senha },
-      });
+      const response = await supabase.functions.invoke("login", { body: { email, senha } });
+      const result = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
 
-      const result = typeof response.data === "string"
-        ? JSON.parse(response.data)
-        : response.data;
+      if (response.error) return showAlert(response.error.message || "Falha ao fazer login.", "Erro");
 
-      if (response.error) {
-        Alert.alert("Erro", response.error.message || "Falha ao fazer login.");
-        return;
-      }
-
+      await supabase.auth.setSession(result.session);
       setAuth(result?.session?.access_token ?? null, result?.user?.id ?? null);
 
-      Alert.alert("Sucesso", "Login realizado!");
       router.replace("/screens/map");
-
     } catch (err: any) {
-      Alert.alert("Erro", err?.message || "Ocorreu um erro inesperado.");
+      showAlert(err?.message || "Ocorreu um erro inesperado.", "Erro");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Entrar</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.title, { color: theme.colors.text }]}>Entrar</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="E-mail"
+      <LabeledInput
+        label="E-mail"
         value={email}
         onChangeText={setEmail}
-        autoCapitalize="none"
         keyboardType="email-address"
-        placeholderTextColor="#999"
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Senha"
-        secureTextEntry
+      <PasswordInput
+        label="Senha"
         value={senha}
         onChangeText={setSenha}
-        placeholderTextColor="#999"
       />
 
-      <TouchableOpacity
-        style={styles.button}
+      <PrimaryButton
+        title={loading ? "Entrando..." : "Entrar"}
+        loading={loading}
         onPress={handleLogin}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? "Entrando..." : "Entrar"}
-        </Text>
-      </TouchableOpacity>
+      />
 
       <TouchableOpacity onPress={() => router.push("/screens/register")}>
-        <Text style={styles.link}>Criar uma conta</Text>
+        <Text style={[styles.link, { color: theme.colors.primary }]}>Criar uma conta</Text>
       </TouchableOpacity>
+
+      <ThemedAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 }
@@ -100,20 +99,5 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 20 },
   title: { fontSize: 28, marginBottom: 20, fontWeight: "bold" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 14,
-    color: "#000",
-  },
-  button: {
-    backgroundColor: "#000",
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  buttonText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
-  link: { marginTop: 20, textAlign: "center", color: "blue" },
+  link: { marginTop: 20, textAlign: "center" },
 });
