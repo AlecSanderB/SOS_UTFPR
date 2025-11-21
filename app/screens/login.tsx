@@ -8,43 +8,50 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "./supabase";
+import { useAuth } from "../AuthContext";
+import { supabase } from "../supabase";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { setAuth } = useAuth();
+
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
   const validateInputs = () => {
-    const emailPattern = /^[^@]+@[^@]+\w+$/;
-    if (!emailPattern.test(email)) return "Digite um e-mail válido.";
+    if (!/^[^@]+@[^@]+\w+$/.test(email)) return "Digite um e-mail válido.";
     if (senha.length < 6) return "A senha precisa ter pelo menos 6 caracteres.";
     return null;
   };
 
   const handleLogin = async () => {
     const errorMsg = validateInputs();
-    if (errorMsg) {
-      Alert.alert("Erro", errorMsg);
-      return;
-    }
+    if (errorMsg) return Alert.alert("Erro", errorMsg);
 
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("login", {
+      const response = await supabase.functions.invoke("login", {
         body: { email, senha },
       });
 
-      if (error) {
-        Alert.alert("Erro", error.message || "Falha ao fazer login.");
-      } else {
-        Alert.alert("Sucesso", "Login realizado!");
-        router.replace("/map");
+      const result = typeof response.data === "string"
+        ? JSON.parse(response.data)
+        : response.data;
+
+      if (response.error) {
+        Alert.alert("Erro", response.error.message || "Falha ao fazer login.");
+        return;
       }
-    } catch {
-      Alert.alert("Erro", "Ocorreu um erro inesperado.");
+
+      setAuth(result?.session?.access_token ?? null, result?.user?.id ?? null);
+
+      Alert.alert("Sucesso", "Login realizado!");
+      router.replace("/screens/map");
+
+    } catch (err: any) {
+      Alert.alert("Erro", err?.message || "Ocorreu um erro inesperado.");
     } finally {
       setLoading(false);
     }
@@ -73,11 +80,17 @@ export default function LoginScreen() {
         placeholderTextColor="#999"
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? "Entrando..." : "Entrar"}</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Entrando..." : "Entrar"}
+        </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("/register")}>
+      <TouchableOpacity onPress={() => router.push("/screens/register")}>
         <Text style={styles.link}>Criar uma conta</Text>
       </TouchableOpacity>
     </View>

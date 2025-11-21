@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import { supabase } from "./supabase";
+import { supabase } from "../supabase";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
