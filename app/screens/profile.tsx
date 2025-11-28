@@ -15,7 +15,7 @@ const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { token, userId, setAuth } = useAuth();
+  const { token, userId, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,7 +34,6 @@ export default function ProfileScreen() {
     emergency_contact_relationship: "",
   });
 
-  // Load profile once userId is available
   useEffect(() => {
     if (userId) loadProfile();
   }, [userId]);
@@ -79,7 +78,7 @@ export default function ProfileScreen() {
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
     } catch (err: any) {
       console.error(err);
-      Alert.alert("Erro", err.message);
+      Alert.alert("Erro", err.message ?? "Erro inesperado ao atualizar perfil.");
     } finally {
       setSaving(false);
     }
@@ -87,8 +86,7 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
-      setAuth(null, null);
+      await logout();
       router.replace("/");
     } catch (err: any) {
       console.error(err);

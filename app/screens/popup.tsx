@@ -31,11 +31,18 @@ export default function PopupScreen() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState<string | undefined>();
   const [alertMessage, setAlertMessage] = useState("");
+  const [onAlertClose, setOnAlertClose] = useState<(() => void) | null>(null);
 
-  const showAlert = (message: string, title?: string) => {
+  const showAlert = (message: string, title?: string, onClose?: () => void) => {
     setAlertMessage(message);
     setAlertTitle(title);
+    setOnAlertClose(() => onClose || null);
     setAlertVisible(true);
+  };
+
+  const handleAlertClose = () => {
+    setAlertVisible(false);
+    if (onAlertClose) onAlertClose();
   };
 
   const handleClose = () => router.back();
@@ -62,10 +69,13 @@ export default function PopupScreen() {
         },
       });
 
-      if (error) return showAlert(error.message, "Erro");
-
-      showAlert("Emergência registrada!", "Sucesso");
-      router.back();
+      if (error) {
+        return showAlert(error.message, "Erro");
+      }
+      
+      showAlert("Emergência registrada!", "Sucesso", () => {
+        router.back();
+      });
     } catch (err: any) {
       showAlert(err?.message || "Ocorreu um erro inesperado.", "Erro");
     }
@@ -181,7 +191,7 @@ export default function PopupScreen() {
         visible={alertVisible}
         title={alertTitle}
         message={alertMessage}
-        onClose={() => setAlertVisible(false)}
+        onClose={handleAlertClose}
       />
     </KeyboardAvoidingView>
   );

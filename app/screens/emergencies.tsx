@@ -11,6 +11,7 @@ import { supabase } from "../../util/supabase";
 import { useTheme } from "../../util/ThemeContext";
 import EmergencyCard from "../components/EmergencyCard";
 import PageWithMenu from "../components/PageWithMenu";
+import ThemedAlert from "../components/ThemedAlert";
 
 type Emergency = {
   id: string;
@@ -29,18 +30,25 @@ export default function EmergenciesScreen() {
   const [emergencies, setEmergencies] = useState<Emergency[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState<string | undefined>();
+  const [alertMessage, setAlertMessage] = useState("");
+
+  const showAlert = (message: string, title?: string) => {
+    setAlertMessage(message);
+    setAlertTitle(title);
+    setAlertVisible(true);
+  };
 
   const fetchEmergencies = async () => {
     if (!token) {
-      setError("Usuário não autenticado");
       setLoading(false);
       setRefreshing(false);
-      return;
+      return showAlert("Usuário não autenticado", "Erro");
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const { data: rawData, error } = await supabase.functions.invoke(
@@ -50,14 +58,16 @@ export default function EmergenciesScreen() {
 
       if (error) throw error;
 
-      const resData = typeof rawData === "string"
-        ? JSON.parse(rawData)
-        : rawData;
+      const resData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
 
-      setEmergencies(resData?.data ?? []);
+      if (!resData.success) {
+        return showAlert(resData.error || "Falha ao carregar emergências", "Erro");
+      }
+
+      setEmergencies(resData.data ?? []);
     } catch (err: any) {
       console.error("Error fetching emergencies:", err);
-      setError(err.message || "Ocorreu um erro inesperado.");
+      showAlert(err?.message || "Ocorreu um erro inesperado.", "Erro");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -90,13 +100,7 @@ export default function EmergenciesScreen() {
         </>
       )}
 
-      {error && (
-        <Text style={[styles.errorText, { color: theme.colors.primary }]}>
-          {error}
-        </Text>
-      )}
-
-      {!loading && !error && (
+      {!loading && emergencies.length === 0 && (
         <Text style={{ color: theme.colors.text }}>
           Nenhuma emergência encontrada.
         </Text>
@@ -104,29 +108,38 @@ export default function EmergenciesScreen() {
     </PageWithMenu>
   );
 
-  if (loading || error || emergencies.length === 0) return renderEmptyState();
+  if (loading || emergencies.length === 0) return renderEmptyState();
 
   return (
-    <PageWithMenu
-      scroll={false}
-      contentContainerStyle={{ backgroundColor: theme.colors.background }}
-    >
-      <FlatList
-        data={emergencies}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <EmergencyCard item={item} />}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.colors.primary}
-            colors={[theme.colors.primary]}
-            progressBackgroundColor={theme.colors.card}
-          />
-        }
-        contentContainerStyle={{ padding: 20, paddingTop: 0 }}
+    <>
+      <PageWithMenu
+        scroll={false}
+        contentContainerStyle={{ backgroundColor: theme.colors.background }}
+      >
+        <FlatList
+          data={emergencies}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => <EmergencyCard item={item} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.colors.primary}
+              colors={[theme.colors.primary]}
+              progressBackgroundColor={theme.colors.card}
+            />
+          }
+          contentContainerStyle={{ padding: 20, paddingTop: 0 }}
+        />
+      </PageWithMenu>
+
+      <ThemedAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        onClose={() => setAlertVisible(false)}
       />
-    </PageWithMenu>
+    </>
   );
 }
 
@@ -138,11 +151,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    fontSize: 16,
-  },
-  errorText: {
-    marginTop: 10,
-    fontWeight: "bold",
     fontSize: 16,
   },
 });
