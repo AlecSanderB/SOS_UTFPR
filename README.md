@@ -1,50 +1,34 @@
-# Welcome to your Expo app 👋
+# Aplicativo SOS UTFPR 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicativo para geração de emergência baseadas em coordenadas em um mapa.
 
-## Get started
+## Fluxo principal do aplicativo
 
-1. Install dependencies
+### Registro
+Insira os dados necessários e pressione em Registrar
+![tela de registro](image-2.png)
 
-   ```bash
-   npm install
-   ```
+### Login
 
-2. Start the app
+Simplesmente insira o email e senha e pressione em Entrar.
+![tela de login](image-1.png)
 
-   ```bash
-   npx expo start
-   ```
+### Mapa
+Pressione em um lugar para selecionar uma localização. Caso se perca, use o botão de reset no canto inferior direito.
+![tela de mapa](image-3.png)
 
-In the output, you'll find options to open the app in a
+### Tela de registro de emergência
+Insira os dados e pressione em chamar SAMU. Uma emergência será registrada no nosso banco de dados.
+![tela de registro de emergência](image-4.png)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Tela de perfil
+Usando o ícone no canto superior esquerdo você pode trocar para a tela de perfil. Nessa tela é possível atualziar suas informações pessoais e adicionar alguns que não foram preenchidas no cadastro.
+![tela de perfil](image-5.png)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Tela de configurações
+Permite que você alterne entre o modo claro e escuro.
+![tela de configurações](image-6.png)
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Tela de emergências
+Lista todas as emergências que você registrou e as informações relevantes a elas.
+![tela de emergências](image-7.png)

@@ -206,9 +206,10 @@ const styles = StyleSheet.create({
   },
 
   topButton: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
+    marginTop: 200,
     marginBottom: 25,
     alignItems: "center",
     elevation: 3,
