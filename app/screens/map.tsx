@@ -13,8 +13,8 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import { useTheme } from "../../util/ThemeContext";
 import AnimatedMenu from "../components/AnimatedMenu";
-import { useTheme } from "../ThemeContext";
 
 async function getLocationWithTimeout(options: any, timeoutMs: number) {
   return Promise.race([
@@ -33,14 +33,13 @@ export default function MapScreen() {
 
   const geojson = require("../assets/map.json");
 
-  // Two PNG markers based on theme
   const markerImage = isDark
     ? require("../assets/map-marker-2-svgrepo-com-white.png")
     : require("../assets/map-marker-2-svgrepo-com.png");
 
   const fallbackCenter: [number, number] = [-53.0964, -25.705];
   const defaultZoom = 15;
-  const minZoom = 12; // allow zooming out more
+  const minZoom = 12;
   const maxZoom = 18;
 
   const [centerCoords, setCenterCoords] = useState<[number, number] | null>(null);
@@ -122,7 +121,6 @@ export default function MapScreen() {
     });
   };
 
-  // Reset map camera to user location or fallback
   const handleResetCamera = () => {
     const targetCoords = centerCoords ?? fallbackCenter;
     zoomRef.current = defaultZoom;
@@ -155,7 +153,7 @@ export default function MapScreen() {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={[styles.loadingText, { color: theme.colors.text }]}>Carregando...</Text>
+        <Text style={[styles.loadingText, { color: theme.colors.text }]}>Carregando mapa...</Text>
 
         {locationError && (
           <View style={[styles.errorBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>

@@ -1,18 +1,25 @@
 import { FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import React, { forwardRef, useImperativeHandle, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "../ThemeContext";
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useTheme } from "../../util/ThemeContext";
 
 const routeMap = {
-  map: { path: "/screens/map", icon: { lib: MaterialIcons, name: "map" } },
-  profile: { path: "/screens/profile", icon: { lib: FontAwesome5, name: "user" } },
-  settings: { path: "/screens/settings", icon: { lib: MaterialIcons, name: "settings" } },
-  emergencies: { path: "/screens/emergencies", icon: { lib: MaterialIcons, name: "warning" } },
+  map: { path: "/screens/map", icon: { lib: MaterialIcons, name: "map", label: "Mapa" } },
+  profile: { path: "/screens/profile", icon: { lib: FontAwesome5, name: "user", label: "Perfil" } },
+  settings: { path: "/screens/settings", icon: { lib: MaterialIcons, name: "settings", label: "Configurações" } },
+  emergencies: { path: "/screens/emergencies", icon: { lib: MaterialIcons, name: "warning", label: "Emergências" } },
 } as const;
 
 type RouteKeys = keyof typeof routeMap;
-
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
 const AnimatedMenu = forwardRef((_, ref) => {
@@ -23,48 +30,67 @@ const AnimatedMenu = forwardRef((_, ref) => {
   const { theme } = useTheme();
 
   useImperativeHandle(ref, () => ({
-    open: () => setMenuOpen(true),
-    close: () => setMenuOpen(false),
-    toggle: () => setMenuOpen((v) => !v),
+    open: () => openMenu(),
+    close: () => closeMenu(),
+    toggle: () => (menuOpen ? closeMenu() : openMenu()),
   }));
 
-  const toggleMenu = () => {
-    const toValue = menuOpen ? 0 : 1;
+  const openMenu = () => {
+    setMenuOpen(true);
     Animated.timing(menuAnim, {
-      toValue,
+      toValue: 1,
       duration: 250,
       easing: Easing.out(Easing.ease),
       useNativeDriver: true,
     }).start();
-    setMenuOpen(!menuOpen);
+  };
+
+  const closeMenu = () => {
+    Animated.timing(menuAnim, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => setMenuOpen(false));
   };
 
   const navigateTo = (screen: RouteKeys) => {
     if (routeMap[screen].path === pathname) return;
-    setMenuOpen(false);
-    Animated.timing(menuAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start();
+    closeMenu();
     router.push(routeMap[screen].path);
   };
 
-  const menuScale = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
-  const menuOpacity = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
+  const menuScale = menuAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
+  const menuOpacity = menuAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
   const disabledColor = theme.colors.disabled ?? "#888";
 
   return (
-    <View style={styles.absoluteContainer}>
+    <View style={styles.fullScreenContainer} pointerEvents="box-none">
+      {menuOpen && (
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={closeMenu}
+        />
+      )}
+
       <TouchableOpacity
         style={[styles.menuButton, { backgroundColor: theme.colors.card }]}
-        onPress={toggleMenu}
+        onPress={() => (menuOpen ? closeMenu() : openMenu())}
       >
         <Text style={[styles.menuButtonText, { color: theme.colors.text }]}>
           {menuOpen ? "×" : "☰"}
         </Text>
       </TouchableOpacity>
 
-      <View
-        pointerEvents={menuOpen ? "auto" : "none"}
-        style={styles.menuWrapper}
-      >
+      <View pointerEvents={menuOpen ? "auto" : "none"} style={styles.menuWrapper}>
         <Animated.View
           style={[
             styles.menuOptions,
@@ -80,6 +106,7 @@ const AnimatedMenu = forwardRef((_, ref) => {
           {Object.entries(routeMap).map(([key, route]) => {
             const isActive = route.path === pathname;
             const IconComponent = route.icon.lib;
+
             return (
               <TouchableOpacity
                 key={key}
@@ -97,8 +124,13 @@ const AnimatedMenu = forwardRef((_, ref) => {
                   color={isActive ? disabledColor : theme.colors.text}
                   style={{ marginRight: 10 }}
                 />
-                <Text style={[styles.menuText, { color: isActive ? disabledColor : theme.colors.text }]}>
-                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: isActive ? disabledColor : theme.colors.text },
+                  ]}
+                >
+                  {route.icon.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -112,28 +144,53 @@ const AnimatedMenu = forwardRef((_, ref) => {
 export default AnimatedMenu;
 
 const styles = StyleSheet.create({
-  absoluteContainer: { 
-    position: "absolute", 
-    top: 30, 
-    left: 0, 
+  fullScreenContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
     width: "100%",
-    zIndex: 1000,
-    alignItems: "flex-start"
+    height: "100%",
+    zIndex: 2000,
+    alignItems: "flex-start",
   },
+
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1999,
+  },
+
   menuButton: {
+    zIndex: 2001,
     width: 60,
     height: 60,
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 30,
     marginLeft: 20,
     shadowColor: "#000",
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 5,
   },
-  menuButtonText: { fontSize: 28, fontWeight: "bold" },
-  menuWrapper: { marginTop: 70, left: 20, position: "absolute" }, 
+
+  menuButtonText: {
+    fontSize: 28,
+    fontWeight: "bold",
+  },
+
+  menuWrapper: {
+    marginTop: 100,
+    left: 20,
+    position: "absolute",
+    zIndex: 2002,
+  },
+
   menuOptions: {
     borderRadius: 12,
     overflow: "hidden",
@@ -142,6 +199,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 5,
   },
+
   menuOption: {
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -149,5 +207,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 1,
   },
-  menuText: { fontSize: 16, fontWeight: "600" },
+
+  menuText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });

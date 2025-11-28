@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
-import { useTheme } from "../ThemeContext";
+import { useTheme } from "../../util/ThemeContext";
 import LabeledInput from "./LabeledInput";
 
 interface Props {

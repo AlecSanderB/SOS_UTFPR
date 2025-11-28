@@ -1,25 +1,50 @@
 import React from "react";
-import { KeyboardTypeOptions, StyleSheet, Text, TextInput, View } from "react-native";
-import { useTheme } from "../ThemeContext";
+import {
+  KeyboardTypeOptions,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useTheme } from "../../util/ThemeContext";
 
 type Props = {
   label: string;
   value: string;
   onChangeText: (t: string) => void;
   keyboardType?: KeyboardTypeOptions;
+  placeholder?: string;
 };
 
-export default function LabeledInput({ label, value, onChangeText, keyboardType = "default" }: Props) {
+export default function LabeledInput({
+  label,
+  value,
+  onChangeText,
+  keyboardType = "default",
+  placeholder = "",
+}: Props) {
   const { theme } = useTheme();
 
   return (
     <View style={styles.wrapper}>
-      <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>
+      <Text style={[styles.label, { color: theme.colors.text }]}>
+        {label}
+      </Text>
+
       <TextInput
-        style={[styles.input, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text }]}
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.card,
+            borderColor: theme.colors.border,
+            color: theme.colors.text,
+          },
+        ]}
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
+        placeholder={placeholder}
+        placeholderTextColor={theme.colors.disabled}
       />
     </View>
   );

@@ -1,24 +1,33 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { useTheme } from "../ThemeContext";
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useTheme } from "../../util/ThemeContext";
 
-interface LabeledPasswordInputProps {
+interface Props {
   label: string;
   value: string;
   onChangeText: (text: string) => void;
+  placeholder?: string;
 }
 
 export default function LabeledPasswordInput({
   label,
   value,
   onChangeText,
-}: LabeledPasswordInputProps) {
+  placeholder = "",
+}: Props) {
   const { theme } = useTheme();
   const [secure, setSecure] = useState(true);
 
   return (
     <View style={styles.container}>
       <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>
+
       <View
         style={[
           styles.inputWrapper,
@@ -30,9 +39,12 @@ export default function LabeledPasswordInput({
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secure}
+          placeholder={placeholder}
+          placeholderTextColor={theme.colors.disabled}
           autoCapitalize="none"
           autoCorrect={false}
         />
+
         <TouchableOpacity onPress={() => setSecure(!secure)}>
           <Text style={[styles.toggle, { color: theme.colors.primary }]}>
             {secure ? "Mostrar" : "Ocultar"}

@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text } from "react-native";
-import { useTheme } from "../ThemeContext";
+import { useTheme } from "../../util/ThemeContext";
 
 export default function SectionTitle({ children }: { children: string }) {
   const { theme } = useTheme();

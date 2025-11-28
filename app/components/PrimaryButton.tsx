@@ -1,6 +1,6 @@
 import React from "react";
 import { ActivityIndicator, StyleProp, StyleSheet, Text, TouchableOpacity, ViewStyle } from "react-native";
-import { useTheme } from "../ThemeContext";
+import { useTheme } from "../../util/ThemeContext";
 
 interface Props {
   title: string;
@@ -12,8 +12,6 @@ interface Props {
 export default function PrimaryButton({ title, loading = false, onPress, style }: Props) {
   const { theme } = useTheme();
 
-  const textColor = theme.colors.primary === "#007AFF" ? "#fff" : theme.colors.text;
-
   return (
     <TouchableOpacity
       style={[styles.button, { backgroundColor: theme.colors.primary }, style]}
@@ -21,9 +19,11 @@ export default function PrimaryButton({ title, loading = false, onPress, style }
       disabled={loading}
     >
       {loading ? (
-        <ActivityIndicator color={textColor} />
+        <ActivityIndicator color={theme.colors.text} />
       ) : (
-        <Text style={[styles.buttonText, { color: textColor }]}>{title}</Text>
+        <Text style={[styles.buttonText, { color: theme.colors.text }]}>
+          {title}
+        </Text>
       )}
     </TouchableOpacity>
   );

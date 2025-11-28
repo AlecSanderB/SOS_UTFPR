@@ -6,11 +6,11 @@ import {
   StyleSheet,
   Text,
 } from "react-native";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "../../util/AuthContext";
+import { supabase } from "../../util/supabase";
+import { useTheme } from "../../util/ThemeContext";
 import EmergencyCard from "../components/EmergencyCard";
 import PageWithMenu from "../components/PageWithMenu";
-import { supabase } from "../supabase";
-import { useTheme } from "../ThemeContext";
 
 type Emergency = {
   id: string;
@@ -43,13 +43,17 @@ export default function EmergenciesScreen() {
     setError(null);
 
     try {
-      const { data: rawData, error } = await supabase.functions.invoke("get-emergencies", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const { data: rawData, error } = await supabase.functions.invoke(
+        "get-emergencies",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       if (error) throw error;
 
-      const resData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+      const resData = typeof rawData === "string"
+        ? JSON.parse(rawData)
+        : rawData;
+
       setEmergencies(resData?.data ?? []);
     } catch (err: any) {
       console.error("Error fetching emergencies:", err);
@@ -69,45 +73,44 @@ export default function EmergenciesScreen() {
     fetchEmergencies();
   };
 
-  if (loading || error || emergencies.length === 0) {
-    return (
-      <PageWithMenu
-        scroll={false}
-        contentContainerStyle={{
-          ...styles.centered,
-          backgroundColor: theme.colors.background,
-        }}
-      >
-        {loading && (
-          <>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text
-              style={{
-                color: theme.colors.text,
-                marginTop: 10,
-                fontSize: 16,
-              }}
-            >
-              Carregando emergências...
-            </Text>
-          </>
-        )}
-        {error && (
-          <Text style={{ color: theme.colors.primary, fontWeight: "bold" }}>
-            {error}
+  const renderEmptyState = () => (
+    <PageWithMenu
+      scroll={false}
+      contentContainerStyle={{
+        ...styles.centered,
+        backgroundColor: theme.colors.background,
+      }}
+    >
+      {loading && (
+        <>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.text }]}>
+            Carregando emergências...
           </Text>
-        )}
-        {!loading && !error && emergencies.length === 0 && (
-          <Text style={{ color: theme.colors.text }}>
-            Nenhuma emergência encontrada.
-          </Text>
-        )}
-      </PageWithMenu>
-    );
-  }
+        </>
+      )}
+
+      {error && (
+        <Text style={[styles.errorText, { color: theme.colors.primary }]}>
+          {error}
+        </Text>
+      )}
+
+      {!loading && !error && (
+        <Text style={{ color: theme.colors.text }}>
+          Nenhuma emergência encontrada.
+        </Text>
+      )}
+    </PageWithMenu>
+  );
+
+  if (loading || error || emergencies.length === 0) return renderEmptyState();
 
   return (
-    <PageWithMenu scroll={false} contentContainerStyle={{ backgroundColor: theme.colors.background }}>
+    <PageWithMenu
+      scroll={false}
+      contentContainerStyle={{ backgroundColor: theme.colors.background }}
+    >
       <FlatList
         data={emergencies}
         keyExtractor={(item) => item.id.toString()}
@@ -118,6 +121,7 @@ export default function EmergenciesScreen() {
             onRefresh={onRefresh}
             tintColor={theme.colors.primary}
             colors={[theme.colors.primary]}
+            progressBackgroundColor={theme.colors.card}
           />
         }
         contentContainerStyle={{ padding: 20, paddingTop: 0 }}
@@ -127,5 +131,18 @@ export default function EmergenciesScreen() {
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
+  errorText: {
+    marginTop: 10,
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 });

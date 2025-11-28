@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTheme } from "../ThemeContext";
+import { useTheme } from "../../util/ThemeContext";
 
 type Props = {
   label: string;

@@ -2,12 +2,12 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import { supabase } from "../../util/supabase";
+import { useTheme } from "../../util/ThemeContext";
 import Dropdown from "../components/Dropdown";
 import LabeledInput from "../components/LabeledInput";
 import LabeledPasswordInput from "../components/LabeledPasswordInput";
 import PrimaryButton from "../components/PrimaryButton";
-import { supabase } from "../supabase";
-import { useTheme } from "../ThemeContext";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 

@@ -1,14 +1,13 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useAuth } from "../AuthContext";
-import { supabase } from "../supabase";
-
+import { useAuth } from "../../util/AuthContext";
+import { supabase } from "../../util/supabase";
+import { useTheme } from "../../util/ThemeContext";
 import LabeledInput from "../components/LabeledInput";
 import PasswordInput from "../components/LabeledPasswordInput";
 import PrimaryButton from "../components/PrimaryButton";
 import ThemedAlert from "../components/ThemedAlert";
-import { useTheme } from "../ThemeContext";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -19,7 +18,6 @@ export default function LoginScreen() {
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Themed alert state
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState<string | undefined>();
   const [alertMessage, setAlertMessage] = useState("");
@@ -41,15 +39,27 @@ export default function LoginScreen() {
     if (errorMsg) return showAlert(errorMsg, "Erro");
 
     setLoading(true);
-
     try {
       const response = await supabase.functions.invoke("login", { body: { email, senha } });
       const result = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
 
-      if (response.error) return showAlert(response.error.message || "Falha ao fazer login.", "Erro");
+      if (result?.error || response.error) {
+        return showAlert(result?.error || response.error?.message || "Falha ao fazer login.", "Erro");
+      }
 
-      await supabase.auth.setSession(result.session);
-      setAuth(result?.session?.access_token ?? null, result?.user?.id ?? null);
+      if (!result?.session || !result?.user) {
+        console.error("Unexpected login response:", result);
+        return showAlert("Falha ao fazer login. Resposta inesperada do servidor.", "Erro");
+      }
+
+      const { access_token, refresh_token, expires_in } = result.session;
+
+      if (!access_token || !refresh_token) {
+        console.error("Missing tokens in session:", result.session);
+        return showAlert("Falha ao fazer login. Tokens ausentes.", "Erro");
+      }
+
+      await setAuth(access_token, refresh_token, result.user.id, expires_in);
 
       router.replace("/screens/map");
     } catch (err: any) {

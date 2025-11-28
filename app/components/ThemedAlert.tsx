@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "../ThemeContext";
+import { useTheme } from "../../util/ThemeContext";
 
 interface Props {
   visible: boolean;

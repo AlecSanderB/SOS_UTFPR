@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { ScrollView, StyleSheet, View, ViewStyle } from "react-native";
-import { useTheme } from "../ThemeContext";
+import { useTheme } from "../../util/ThemeContext";
 import AnimatedMenu from "./AnimatedMenu";
 
 type Props = {

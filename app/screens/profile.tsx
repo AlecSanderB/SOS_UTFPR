@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, View } from "react-native";
-import { useAuth } from "../AuthContext";
-import { supabase } from "../supabase";
+import { useAuth } from "../../util/AuthContext";
+import { supabase } from "../../util/supabase";
 
 import BirthDateInput from "../components/BirthDateInput";
 import Dropdown from "../components/Dropdown";
@@ -89,7 +89,7 @@ export default function ProfileScreen() {
     try {
       await supabase.auth.signOut();
       setAuth(null, null);
-      router.replace("/"); // Go to starting screen
+      router.replace("/");
     } catch (err: any) {
       console.error(err);
       Alert.alert("Erro", err.message ?? "Erro ao sair da conta.");

@@ -2,9 +2,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
 
+import { useTheme } from "../../util/ThemeContext";
 import PageWithMenu from "../components/PageWithMenu";
 import SectionTitle from "../components/SectionTitle";
-import { useTheme } from "../ThemeContext";
 
 const LANGUAGES = ["English", "Português", "Español", "Français"];
 const STORAGE_KEY_THEME = "@app_theme";
